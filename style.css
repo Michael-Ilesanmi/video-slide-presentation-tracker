@@ -3,6 +3,11 @@ body {
     max-width: 100%;
 }
 
+.base__container {
+    width: 40vw;
+    margin: auto;
+}
+
 #presenting_video_container {
     width: 100%;
 }
@@ -59,3 +64,10 @@ body {
 .hidden {
     display: none;
 }
+
+@media only screen and (max-width: 600px) {
+    .base__container {
+        width: 90vw;
+        margin: auto;
+    }
+  }
