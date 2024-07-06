@@ -4,7 +4,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const init = function (pluginOptions = {}) {
     let defaultOptions = {
         strict_mode: false, // pop-up questions should be made compulsory {true|false}.
-        dev_mode: true,
+        dev_mode: false,
     }
     pluginOptions = Object.assign({}, defaultOptions, pluginOptions);
 
@@ -160,7 +160,7 @@ const init = function (pluginOptions = {}) {
             timestampObject.push(createTimeStampObject(item));
         });
         console.log(timestampObject)
-        document.querySelector('#dev_mode').innerHTML = JSON.stringify(timestampObject);
+       if(pluginOptions.dev_mode === true) { document.querySelector('#dev_mode').innerHTML = JSON.stringify(timestampObject);}
         return timestampObject;
     }
 
