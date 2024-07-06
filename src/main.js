@@ -1,8 +1,81 @@
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.mjs';
+
 const init = function (pluginOptions = {}) {
     let defaultOptions = {
-        strict_mode: false // pop-up questions should be made compulsory {true|false}.
+        strict_mode: false, // pop-up questions should be made compulsory {true|false}.
+        dev_mode: true,
     }
     pluginOptions = Object.assign({}, defaultOptions, pluginOptions);
+
+    let globalSlideNumber = 0;
+
+    let pdfFunction;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let pdfCanvas;
+    let pdfContext;
+    /**
+   * If another page rendering in progress, waits until the rendering is
+   * finised. Otherwise, executes rendering immediately.
+   */
+    function queueRenderPage(pageNumber = 1) {
+        if (typeof Number(pageNumber) !== 'number') {
+            return console.warn(`pageNumber must be a number: ${typeof pageNumber} passed.`)
+        }
+        console.log('pageNumPending:', pageNumPending)
+        console.log('pageRendering:', pageRendering)
+        if (pageRendering) {
+            pageNumPending = pageNumber;
+        } else {
+            setPdfPage(pageNumber);
+        }
+    }
+    function setPdfPage(pageNumber = 1) {
+        console.log('pageNumber:',pageNumber)
+        pageRendering = true;
+        pdfFunction.getPage(pageNumber).then(function (page) {
+            let desiredWidth = VIDEO_PLAYER.offsetWidth;
+            let viewport = page.getViewport({ scale: 1, });
+            let scale = desiredWidth / viewport.width;
+            let scaledViewport = page.getViewport({ scale: scale, });
+
+            // Prepare canvas using PDF page dimensions
+            let canvas = pdfCanvas;
+            canvas.width = VIDEO_PLAYER.offsetWidth;
+            canvas.height = VIDEO_PLAYER.offsetHeight;
+
+            // Render PDF page into canvas context
+            let renderContext = {
+                canvasContext: pdfContext,
+                viewport: scaledViewport
+            };
+            let renderTask = page.render(renderContext);
+            renderTask.promise.then(function () {
+                console.log('Page rendered');
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                // New page rendering is pending
+                setPdfPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+
+    }
+
+    function mountPdfCanvas(url) {
+        let loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(function (pdf) {
+            console.log('PDF loaded');
+            // Fetch the first page
+            pdfFunction = pdf;
+            setPdfPage();
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+    }
 
     const custom__modal__container = document.createElement('div');
     custom__modal__container.id = 'custom__modal__container';
@@ -20,8 +93,10 @@ const init = function (pluginOptions = {}) {
     VIDEO_PLAYER.classList.add('custom__video__element');
     const SLIDE = document.createElement('iframe');
     SLIDE.id = 'powerpoint__container';
+    const PDF_CONTAINER = document.createElement('canvas');
+    PDF_CONTAINER.id = 'custom__pdf__container';
     let TRACKING_FILE_URL;
-    let POWERPOINT_URL;
+    let PRESENTATION_URL;
     let VIDEO_TITLE
     let timeStamps;
 
@@ -33,7 +108,7 @@ const init = function (pluginOptions = {}) {
     async function mountVideo(video = null) {
         if (video) {
             VIDEO_PLAYER.src = video.video_url ?? false;
-            POWERPOINT_URL = formatPowerPointUrl(video.presentation_url) ?? false;
+            PRESENTATION_URL = video.presentation_url ?? false;
             TRACKING_FILE_URL = video.tracking_url ?? false;
             VIDEO_TITLE = video.title ?? false;
             return true;
@@ -48,27 +123,17 @@ const init = function (pluginOptions = {}) {
     async function mountElementsInContainer() {
         if (CONTAINER) {
             CONTAINER.appendChild(VIDEO_PLAYER);
-            if (POWERPOINT_URL) {
-                SLIDE.src = POWERPOINT_URL;
-                SLIDE.title = VIDEO_TITLE;
-                CONTAINER.appendChild(SLIDE);
+            if (PRESENTATION_URL) {
+                CONTAINER.appendChild(PDF_CONTAINER);
                 CONTAINER.appendChild(custom__modal__container);
+                mountPdfCanvas(PRESENTATION_URL)
+                pdfCanvas = document.getElementById('custom__pdf__container');
+                pdfContext = pdfCanvas.getContext('2d')
             }
             setVideoOptions();
         }
     }
 
-    /**
-     * Create an embed URL for the powerpoint document
-     * @param {string} url 
-     * @returns {string|boolean}
-     */
-    function formatPowerPointUrl(url) {
-        if (url) {
-            return `https://view.officeapps.live.com/op/embed.aspx?src=${url}`;
-        }
-        return false;
-    }
 
     /**
      * Set the attributes of the mounted <video></video> element 
@@ -94,6 +159,7 @@ const init = function (pluginOptions = {}) {
             timestampObject.push(createTimeStampObject(item));
         });
         console.log(timestampObject)
+        document.querySelector('#dev_mode').innerHTML = JSON.stringify(timestampObject);
         return timestampObject;
     }
 
@@ -104,7 +170,7 @@ const init = function (pluginOptions = {}) {
      * @returns {string|void}
      */
     function formatQuestion(line = null) {
-        if(line){
+        if (line) {
             let question = line.split('?')[1];
             return question;
         }
@@ -157,17 +223,17 @@ const init = function (pluginOptions = {}) {
     }
 
     function findVideoFrame(data) {
-        // const frameSelection = document.querySelector('#presenting_video_container > .custom_iframe_element');
-        // const iframe = frameSelection.contentDocument || frameSelection.contentWindow.document;
-        // const ButtonFastFwd = iframe.contentWindow.document.getElementById("ButtonFastFwd-Small14");
-        // var elmnt = iframe.contentWindow.document.getElementsByTagName("H1")[0];
-        // // const ButtonFastFwd = document.getElementById("ButtonFastFwd-Small14");
         if (data.page.includes('question')) {
             VIDEO_PLAYER.pause();
             let question = formatQuestion(data.page);
             openQuestionModal(question);
+            return;
         }
-        console.log(data)
+        if (data.page !== globalSlideNumber) {
+            globalSlideNumber = data.page;
+            queueRenderPage(data.page);
+            return;
+        }
     }
 
     /**
@@ -185,11 +251,10 @@ const init = function (pluginOptions = {}) {
         setTimeout(() => {
             modal__submit__btn = document.querySelector('#modal__submit__btn');
             modal__close__btn = document.querySelector('#modal__close__btn');
-            console.log(modal__submit__btn)
-            modal__submit__btn.addEventListener('click', function() {
+            modal__submit__btn.addEventListener('click', function () {
                 answerQuestion(document.getElementById('question__answer').value)
             });
-            modal__close__btn.addEventListener('click', function() {
+            modal__close__btn.addEventListener('click', function () {
                 if (pluginOptions.strict_mode === true) {
                     VIDEO_PLAYER.currentTime -= 1;
                 }
@@ -220,9 +285,9 @@ const init = function (pluginOptions = {}) {
      * @param {Array} timestamps 
      * @returns {Array}
      */
-    function mapCurrentTimestamp (currentTime = 0, timestamps = []){
+    function mapCurrentTimestamp(currentTime = 0, timestamps = []) {
         let currentTimestamp = timestamps.find((time) => {
-            return (time.start <= currentTime && time.end > currentTime) 
+            return (time.start <= currentTime && time.end > currentTime)
                 || (time.start <= currentTime && !time.end)
         });
         return currentTimestamp;
@@ -243,7 +308,7 @@ const init = function (pluginOptions = {}) {
                 }
             }, 1000);
         })
-        VIDEO_PLAYER.addEventListener('pause', function() {
+        VIDEO_PLAYER.addEventListener('pause', function () {
             clearInterval(interval)
         });
 
@@ -267,3 +332,5 @@ const init = function (pluginOptions = {}) {
             }
         );
 }
+
+document.addEventListener('load', init());

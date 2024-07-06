@@ -14,11 +14,11 @@ body {
     aspect-ratio: 16 / 9;
 }
 
-#presenting_video_container>#powerpoint__container {
+#presenting_video_container>#custom__pdf__container{
     max-width: 100%;
     width: 100%;
     min-height: fit-content;
-    aspect-ratio: 16 / 9;
+    height: auto;
     border: none;
 }
 
