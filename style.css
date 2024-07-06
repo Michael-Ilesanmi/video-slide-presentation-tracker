@@ -1,0 +1,61 @@
+html,
+body {
+    max-width: 100%;
+}
+
+#presenting_video_container {
+    width: 100%;
+}
+
+#presenting_video_container>.custom__video__element {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+}
+
+#presenting_video_container>#powerpoint__container {
+    max-width: 100%;
+    width: 100%;
+    min-height: fit-content;
+    aspect-ratio: 16 / 9;
+    border: none;
+}
+
+#custom__modal__container {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #000000B5;
+    height: 100vh;
+    width: 100vw;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#custom__modal__container>#custom__modal {
+    position: relative;
+    background-color: #fff;
+    width: 70%;
+    height: 70%;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+#custom__modal>#modal__submit__btn {
+    background-color: #08386D;
+    cursor: pointer;
+    color: white;
+    outline: none;
+    padding: 4px 8px;
+    display: block;
+    width: fit-content;
+    margin: 6px auto;
+}
+.hidden {
+    display: none;
+}
