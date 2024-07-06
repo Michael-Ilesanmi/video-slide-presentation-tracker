@@ -32,6 +32,7 @@ const init = function (pluginOptions = {}) {
         }
     }
     function setPdfPage(pageNumber = 1) {
+        pageNumber = Number(pageNumber)
         console.log('pageNumber:',pageNumber)
         pageRendering = true;
         pdfFunction.getPage(pageNumber).then(function (page) {
