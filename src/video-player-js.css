@@ -65,6 +65,12 @@ body {
     display: none;
 }
 
+#pagesNumber {
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
 @media only screen and (max-width: 600px) {
     .base__container {
         width: 90vw;
