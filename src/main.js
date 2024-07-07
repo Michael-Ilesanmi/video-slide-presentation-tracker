@@ -1,39 +1,77 @@
-import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.mjs';
 
-const init = function (pluginOptions = {}) {
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs'; // import pdf.js library
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.mjs'; // register pdfJs worker
+
+export default function init(pluginOptions = {}) {
     let defaultOptions = {
         strict_mode: false, // pop-up questions should be made compulsory {true|false}.
         dev_mode: false,
+        id: '#presenting_video_container',
+        tracker: 'txt', // the format of the tracking file {txt|json} 
+        pages: true,
+        data: {
+            "id": "1",
+            "video_url": "",
+            "presentation_url": "",
+            "tracking_url": null, // required if options.tracker === 'txt'
+            "title": "",
+            "tracker_json": {} // required if options.tracker === 'json'
+        }
     }
-    pluginOptions = Object.assign({}, defaultOptions, pluginOptions);
+    pluginOptions = Object.assign({}, defaultOptions, pluginOptions); // register plugin options
 
-    let globalSlideNumber = 0;
+    const custom__modal__container = document.createElement('div');
+    custom__modal__container.id = 'custom__modal__container';
+    const custom__modal = `<div id="custom__modal">
+            <button id="modal__close__btn">X</button>
+            <h3>This is a question box!</h3>
+            <p id="question__position"></p>
+            <input type="text" id="question__answer" name="question__answer" />
+            <button type="submit" id="modal__submit__btn">Submit</button>
+    </div>`;
+    const CONTAINER = document.querySelector(pluginOptions.id);
+    const DATA_ATTRIBUTE = CONTAINER.getAttribute('data-videos');
+    const DATA = DATA_ATTRIBUTE && JSON.parse(DATA_ATTRIBUTE) ? JSON.parse(DATA_ATTRIBUTE) : pluginOptions.data;
+    const VIDEO_PLAYER = document.createElement('video');
+    VIDEO_PLAYER.classList.add('custom__video__element');
+    const SLIDE = document.createElement('iframe');
+    SLIDE.id = 'powerpoint__container';
+    const PDF_CONTAINER = document.createElement('canvas');
+    PDF_CONTAINER.id = 'custom__pdf__container';
+    const PAGES_NUMBER = document.createElement('p')
+    PAGES_NUMBER.id = 'pagesNumber'
+    let TRACKING_FILE_URL;
+    let PRESENTATION_URL;
+    let VIDEO_TITLE;
+
+
+    let globalSlideNumber = 0; // page number of slide according to video timestamp
 
     let pdfFunction;
-    let pageRendering = false;
-    let pageNumPending = null;
-    let pdfCanvas;
-    let pdfContext;
+    let pageRendering = false; // if a pdf rendering is currently in progress {true|false}
+    let pageNumPending = null; // the pageNumber of the slide that is queue to be rendered {null|Number}
+    let pdfCanvas; // the HTML <canvas></canvas> element where the pdf will be rendered on
+    let pdfContext; // the context of the pdf canvas 
+
+
+
     /**
-   * If another page rendering in progress, waits until the rendering is
-   * finised. Otherwise, executes rendering immediately.
-   */
-    function queueRenderPage(pageNumber = 1) {
+    * If another page rendering in progress, waits until the rendering is
+    * finished. Otherwise, executes rendering immediately.
+    */
+    function queueRenderPage(pageNumber = Number(1)) {
         if (typeof Number(pageNumber) !== 'number') {
             return console.warn(`pageNumber must be a number: ${typeof pageNumber} passed.`)
         }
-        console.log('pageNumPending:', pageNumPending)
-        console.log('pageRendering:', pageRendering)
         if (pageRendering) {
             pageNumPending = pageNumber;
         } else {
-            setPdfPage(pageNumber);
+            setPdfPage(Number(pageNumber));
         }
     }
+
     function setPdfPage(pageNumber = 1) {
         pageNumber = Number(pageNumber)
-        console.log('pageNumber:',pageNumber)
         pageRendering = true;
         pdfFunction.getPage(pageNumber).then(function (page) {
             let desiredWidth = VIDEO_PLAYER.offsetWidth;
@@ -53,11 +91,11 @@ const init = function (pluginOptions = {}) {
             };
             let renderTask = page.render(renderContext);
             renderTask.promise.then(function () {
-                console.log('Page rendered');
                 pageRendering = false;
+                displayPageNumbers(pageNumber, pdfFunction.numPages)
                 if (pageNumPending !== null) {
-                // New page rendering is pending
-                setPdfPage(pageNumPending);
+                    // New page rendering is pending
+                    setPdfPage(pageNumPending);
                     pageNumPending = null;
                 }
             });
@@ -68,7 +106,6 @@ const init = function (pluginOptions = {}) {
     function mountPdfCanvas(url) {
         let loadingTask = pdfjsLib.getDocument(url);
         loadingTask.promise.then(function (pdf) {
-            console.log('PDF loaded');
             // Fetch the first page
             pdfFunction = pdf;
             setPdfPage();
@@ -78,28 +115,11 @@ const init = function (pluginOptions = {}) {
         });
     }
 
-    const custom__modal__container = document.createElement('div');
-    custom__modal__container.id = 'custom__modal__container';
-    const custom__modal = `<div id="custom__modal">
-            <button id="modal__close__btn">X</button>
-            <h3>This is a question box!</h3>
-            <p id="question__position"></p>
-            <input type="text" id="question__answer" name="question__answer" />
-            <button type="submit" id="modal__submit__btn">Submit</button>
-    </div>`;
-    const CONTAINER = document.querySelector('#presenting_video_container');
-    const DATA_ATTRIBUTE = CONTAINER.getAttribute('data-videos');
-    const DATA = DATA_ATTRIBUTE && JSON.parse(DATA_ATTRIBUTE) ? JSON.parse(DATA_ATTRIBUTE) : null;
-    const VIDEO_PLAYER = document.createElement('video');
-    VIDEO_PLAYER.classList.add('custom__video__element');
-    const SLIDE = document.createElement('iframe');
-    SLIDE.id = 'powerpoint__container';
-    const PDF_CONTAINER = document.createElement('canvas');
-    PDF_CONTAINER.id = 'custom__pdf__container';
-    let TRACKING_FILE_URL;
-    let PRESENTATION_URL;
-    let VIDEO_TITLE
-    let timeStamps;
+    function displayPageNumbers(current, total) {
+        if (pluginOptions.pages === true) {
+            PAGES_NUMBER.innerHTML = `Page ${current} / ${total}`
+        }
+    }
 
     /**
      * Assign the resources URLs to the various elements
@@ -131,6 +151,9 @@ const init = function (pluginOptions = {}) {
                 pdfCanvas = document.getElementById('custom__pdf__container');
                 pdfContext = pdfCanvas.getContext('2d')
             }
+            if (pluginOptions.pages === true) {
+                CONTAINER.appendChild(PAGES_NUMBER);                
+            }
             setVideoOptions();
         }
     }
@@ -151,16 +174,27 @@ const init = function (pluginOptions = {}) {
      * @returns {Array}
      */
     async function parseTrackingFile() {
-        if (!TRACKING_FILE_URL) {
-            return false
-        }
-        let content = await getFileContent(TRACKING_FILE_URL);
         let timestampObject = [];
-        content.forEach(item => {
-            timestampObject.push(createTimeStampObject(item));
-        });
-        console.log(timestampObject)
-       if(pluginOptions.dev_mode === true) { document.querySelector('#dev_mode').innerHTML = JSON.stringify(timestampObject);}
+        if (pluginOptions.tracker === 'json') {
+            if (DATA.tracker_json.length < 1) {
+                console.warn('Tracker is required. Empty array passed');
+            }
+            timestampObject = DATA.tracker_json
+        } else {
+            if (!TRACKING_FILE_URL) {
+                console.warn('Tracking .txt file is required when options.tracker === txt')
+            } else {
+                let content = await getFileContent(TRACKING_FILE_URL);
+                content.forEach(item => {
+                    timestampObject.push(createTimeStampObject(item));
+                });
+            }
+        }
+        if (pluginOptions.dev_mode === true) {
+            const dev_mode_logger = document.createElement('div');
+            CONTAINER.appendChild(dev_mode_logger);
+            dev_mode_logger.innerHTML = JSON.stringify(timestampObject);
+        }
         return timestampObject;
     }
 
@@ -182,7 +216,7 @@ const init = function (pluginOptions = {}) {
     /**
      * Read the file content of the .txt file
      * @param {url} source 
-     * @returns 
+     * @returns {Array}
      */
     async function getFileContent(source) {
         let file = await fetch(source)
@@ -223,6 +257,11 @@ const init = function (pluginOptions = {}) {
         return totalSeconds;
     }
 
+    /**
+     * Find the action that corresponds with the particular frame of video {page|popup}
+     * @param {object} data 
+     * @returns {void}
+     */
     function findVideoFrame(data) {
         if (data.page.includes('question')) {
             VIDEO_PLAYER.pause();
@@ -281,7 +320,8 @@ const init = function (pluginOptions = {}) {
     }
 
     /**
-     * Find the timestamp array in the collection of timestamps that matches the current position of the video
+     * Find the timestamp array in the collection of timestamps
+     * that matches the current position of the video
      * @param {number} currentTime 
      * @param {Array} timestamps 
      * @returns {Array}
@@ -297,6 +337,8 @@ const init = function (pluginOptions = {}) {
 
     /**
      * Listen if video is playing and watch for timestamp
+     * @param {Array} timestamps 
+     * @returns {void}
      */
     function trackVideoTime(timestamps = []) {
         let currentTimestamp;
@@ -315,7 +357,25 @@ const init = function (pluginOptions = {}) {
 
     }
 
-    mountVideo(DATA[0])
+    /**
+     * Add the CSS file to the head of the HTML
+     * @returns {void}
+     */
+    async function addCss() {
+        const scriptURL = import.meta.url;
+        const cssURL = scriptURL.replace('main.js', 'video-player-js.css');
+        const head = document.getElementsByTagName('head')[0];
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = cssURL;
+        head.appendChild(link);
+        return;
+    }
+
+    addCss();
+
+    mountVideo(Array.isArray(DATA) ? DATA[0] : DATA)
         .then(
             (res) => {
                 if (res === true) {
@@ -334,4 +394,4 @@ const init = function (pluginOptions = {}) {
         );
 }
 
-document.addEventListener('load', init());
+window.videoBookMark = init
