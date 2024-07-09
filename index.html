@@ -7,10 +7,11 @@
 
 <body>
     <div class="base__container">
+        <h1>DEMO</h1>
         <div id="presenting_video_container"></div>
     </div>
-    <script src="./src/main.js" type="module"></script>
-    <script>
+    <script type="module">
+        import videoBookMark from "./src/main.js";
         const options = {
                 strict_mode: false,
                 dev_mode: false,
@@ -27,7 +28,7 @@
                 }
         }
         window.addEventListener('load', function () {
-            window.videoBookMark(options)
+            videoBookMark(options)
         });
     </script>
 </body>

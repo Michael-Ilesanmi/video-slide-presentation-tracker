@@ -143,6 +143,9 @@ export default function init(pluginOptions = {}) {
      */
     async function mountElementsInContainer() {
         if (CONTAINER) {
+            while (CONTAINER.firstChild) {
+                CONTAINER.removeChild(CONTAINER.firstChild);
+            }
             CONTAINER.appendChild(VIDEO_PLAYER);
             if (PRESENTATION_URL) {
                 CONTAINER.appendChild(PDF_CONTAINER);
@@ -393,5 +396,3 @@ export default function init(pluginOptions = {}) {
             }
         );
 }
-
-window.videoBookMark = init
