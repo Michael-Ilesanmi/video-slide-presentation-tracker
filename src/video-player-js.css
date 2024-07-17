@@ -3,28 +3,29 @@ body {
     max-width: 100%;
 }
 
-.base__container {
-    width: 40vw;
-    margin: auto;
-}
-
 #presenting_video_container {
     width: 100%;
 }
 
-#presenting_video_container>.custom__video__element {
+.custom__video__element {
     max-width: 100%;
-    width: 100%;
+    margin-left:auto;
+    margin-right:auto;
     height: auto;
+    display: block;
     aspect-ratio: 16 / 9;
 }
 
-#presenting_video_container>#custom__pdf__container{
+.custom__pdf__container{
     max-width: 100%;
-    width: 100%;
     min-height: fit-content;
+    margin-left: auto;
+    margin-right: auto;
     height: auto;
     border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #custom__modal__container {
@@ -61,9 +62,24 @@ body {
     width: fit-content;
     margin: 6px auto;
 }
+
+#user__response__field {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 16px 4px;
+    margin: 8px 0;
+}
+
+#user__response__field > input {
+    padding: 4px;
+    width: 100%;
+}
+
 .hidden {
     display: none;
 }
+
 
 #pagesNumber {
     font-size: 14px;

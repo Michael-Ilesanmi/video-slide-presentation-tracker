@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,29 +8,28 @@
 
 <body>
     <div class="base__container">
-        <h1>DEMO</h1>
-        <div id="presenting_video_container"></div>
+        <h1 style="text-align: center;">DEMO</h1>
+        <video id="my_video_player" width="50%"></video>
+        <canvas id="my_presentation_container" width="70"></canvas>
     </div>
     <script type="module">
         import videoBookMark from "./src/main.js";
         const options = {
-                strict_mode: false,
-                dev_mode: false,
-                id: '#presenting_video_container',
-                tracker: 'txt',
-                data: {
-                    "id": "1",
-                    "id": "1",
-                    "video_url": "https://terrahq.nyc3.cdn.digitaloceanspaces.com/public/side_hustle_testimonials%20%281080p%29.mp4",
-                    "presentation_url": "https://terrahq.nyc3.cdn.digitaloceanspaces.com/lessons/crm/week-1/How%20to%20Attend%20to%20Irate%20Customer%20PPTx.pdf",
-                    "tracking_url": "text.txt",
-                    "title": "How to use the new Google Maps API",
-                    "tracker_json": null
-                }
+            player_id: '#my_video_player',
+            presentation_id: '#my_presentation_container',
+            tracker: 'txt',
+            data: {
+                "id": "1",
+                "video_url": "https://terrahq.nyc3.cdn.digitaloceanspaces.com/public/side_hustle_testimonials%20%281080p%29.mp4",
+                "presentation_url": "https://terrahq.nyc3.cdn.digitaloceanspaces.com/lessons/crm/week-1/How%20to%20Attend%20to%20Irate%20Customer%20PPTx.pdf",
+                "tracking_url": "text.txt",
+                "tracker_json": null
+            }
         }
         window.addEventListener('load', function () {
             videoBookMark(options)
         });
     </script>
 </body>
+
 </html>
