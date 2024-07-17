@@ -21,12 +21,12 @@ const presentationOptions = {
 
 function mountPresentation(presentation_canvas_id = null, presentation_source = null) {
     PRESENTATION_CANVAS = document.querySelector(presentation_canvas_id);
-    PRESENTATION_CANVAS.classList.add('custom__pdf__container');
-
     if (! PRESENTATION_CANVAS) {
         console.warn('Invalid Presentation Container!')
         return null;
     }
+
+    PRESENTATION_CANVAS.classList.add('custom__pdf__container');
 
     let presentation_canvas_parent = PRESENTATION_CANVAS.parentElement
 
