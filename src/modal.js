@@ -70,7 +70,8 @@ function openModal(question) {
      */
 function formatQuestion(line = null) {
     if (line) {
-        let question = line.split('?')[1];
+        let arr = line.split(/\?(.+)/);
+        let question = arr[1];
         question = question.replace(/'/g, '"');
         question = JSON.parse(question)
         return question;

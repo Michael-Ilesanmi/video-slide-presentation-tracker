@@ -38,8 +38,6 @@ function mountPresentation(presentation_canvas_id = null, presentation_source = 
     presentationOptions.width = ((PRESENTATION_CANVAS.width ?? 100) * presentation_canvas_parent.offsetWidth) / 100;
     presentationOptions.height = presentationOptions.width * (9/16);
 
-    console.log(presentationOptions)
-
     pdfCanvas = PRESENTATION_CANVAS;
     pdfContext = pdfCanvas.getContext('2d')
 
